@@ -17,9 +17,9 @@ const itemsPerPage = 25;
 const countries = ref([]);
 const splitCountries = ref([]);
 const availableItem = ref(0)
+const country = ref({ name: { official: 'default' } })
 
 const sortOption = ref('def');
-
 
 const isShowPopup = ref(false)
 
@@ -27,7 +27,13 @@ function closePopup() {
   isShowPopup.value = false
 }
 
-function showPopup() {
+function showPopup(countryName) {
+  for (var item of countries.value) {
+    if (item.name.official == countryName) {
+      country.value = item
+      break
+    }
+  }
   isShowPopup.value = true
 }
 
@@ -38,6 +44,7 @@ onMounted(async () => {
     countries.value = result;
     splitCountries.value = splitCountriesIntoSubarrays(countries.value);
     availableItem.value = countries.value.length
+    console.log(splitCountries.value[0].length + 'asdf' + availableItem.value);
   } catch (error) {
     console.error('Error fetching data:', error);
   }
@@ -54,7 +61,6 @@ const splitCountriesIntoSubarrays = (data) => {
 };
 
 const searchTerm = ref('');
-const searchResults = ref([]);
 
 const performSearch = () => {
   const tmp = countries.value.filter(item => {
@@ -90,8 +96,9 @@ const sortCountries = () => {
 
     <div class="w-full flex justify-center pt-10">
       <div class="w-[90%] flex justify-end gap-4">
+
+        <!-- sort -->
         <div class="flex gap-2 items-center text-xl">
-          <!-- sort -->
           <div class="flex">
             <button id="states-button" data-dropdown-toggle="dropdown-states"
               class="flex-shrink-0 z-10 inline-flex items-center py-2.5 px-4 text-sm font-medium text-center text-gray-500 bg-gray-100 border border-gray-300 rounded-s-lg hover:bg-gray-200 focus:ring-4 focus:outline-none focus:ring-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 dark:focus:ring-gray-700 dark:text-white dark:border-gray-600"
@@ -111,10 +118,11 @@ const sortCountries = () => {
               <option value="acs">ASC</option>
             </select>
           </div>
-
-          <!-- end sort -->
-
         </div>
+        <!-- end sort -->
+
+
+        <!-- search -->
         <div class="w-1/5">
           <div class="flex items-center">
             <label for="simple-search" class="sr-only">Search</label>
@@ -132,27 +140,31 @@ const sortCountries = () => {
             </div>
           </div>
         </div>
+        <!-- end search -->
+
       </div>
     </div>
 
+    <!-- count -->
     <div class="flex justify-center w-full py-6">
       <div class="w-[90%] flex justify-end">
-        <!-- <p class="text-[1.2rem] tracking-wide font-medium">{{ splitCountries[currentPage].length * currentPage }} / {{ availableItem.length }} Countries</p> -->
+        <p class="text-[1.2rem] tracking-wide font-medium"></p>
       </div>
     </div>
+    <!-- end count -->
 
-
-    <div class="flex justify-center tracking-wide">
+    <!-- table -->
+    <div class="flex justify-center tracking-wide overflow-auto h-[60vh]">
       <fwb-table class="w-[90%]" striped>
-        <fwb-table-head class="text-[1.2rem]">
+        <fwb-table-head class="text-[1.2rem] w-full">
           <fwb-table-head-cell class="">No</fwb-table-head-cell>
-          <fwb-table-head-cell class="text-center">Flag</fwb-table-head-cell>
-          <fwb-table-head-cell>official Name</fwb-table-head-cell>
-          <fwb-table-head-cell>cca2</fwb-table-head-cell>
-          <fwb-table-head-cell>cca3</fwb-table-head-cell>
-          <fwb-table-head-cell>Native Name</fwb-table-head-cell>
-          <fwb-table-head-cell>Alternative Country Name</fwb-table-head-cell>
-          <fwb-table-head-cell>Code</fwb-table-head-cell>
+          <fwb-table-head-cell class="text-center ">Flag</fwb-table-head-cell>
+          <fwb-table-head-cell class="">official Name</fwb-table-head-cell>
+          <fwb-table-head-cell class="">cca2</fwb-table-head-cell>
+          <fwb-table-head-cell class="">cca3</fwb-table-head-cell>
+          <fwb-table-head-cell class="">Native Name</fwb-table-head-cell>
+          <fwb-table-head-cell class="">Alternative Country Name</fwb-table-head-cell>
+          <fwb-table-head-cell class="">Code</fwb-table-head-cell>
         </fwb-table-head>
 
         <fwb-table-body class="text-[1rem] max-h-[60vh] overflow-auto">
@@ -162,7 +174,9 @@ const sortCountries = () => {
               <img :src="country.flags.png" alt="" class="border rounded-lg">
             </fwb-table-cell>
             <fwb-table-cell>
-              {{ country.name.official }}
+              <button @click="showPopup(country.name.official)" class="font-bold">
+                {{ country.name.official }}
+              </button>
             </fwb-table-cell>
             <fwb-table-cell>{{ country.cca2 }}</fwb-table-cell>
             <fwb-table-cell>{{ country.ccn3 }}</fwb-table-cell>
@@ -202,26 +216,30 @@ const sortCountries = () => {
         </fwb-table-body>
       </fwb-table>
     </div>
+    <!-- end table -->
 
+    <!-- pagination -->
     <center>
       <fwb-pagination v-model="currentPage" :total-items="availableItem" :perPage="itemsPerPage"
         class="py-10"></fwb-pagination>
     </center>
+    <!-- end pagination -->
 
   </div>
 
   <!-- modal 2 -->
-  <div v-show="isShowPopup" class="fixed top-0 right-0 left-0 bottom-0 bg-black opacity-50 z-40"></div>
+  <div v-show="isShowPopup" class="fixed top-0 right-0 left-0 bottom-0 bg-black opacity-80 z-40"></div>
   <div id="static-modal" data-modal-backdrop="static" tabindex="-1" aria-hidden="true"
     :class="{ 'flex': isShowPopup, 'hidden': !isShowPopup }"
     class=" overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full">
-    <div class="relative p-4 w-full max-w-2xl max-h-full">
+    <div class="relative p-4 flex justify-center items-center w-full max-w-[60%] max-h-full h-[100vh] border-2">
       <!-- Modal content -->
-      <div class="relative bg-white rounded-lg shadow dark:bg-gray-700">
+      <div class="relative h-[60vh] border-2 border-red-500 bg-white rounded-lg shadow dark:bg-gray-700">
         <!-- Modal header -->
         <div class="flex items-center justify-between p-4 md:p-5 border-b rounded-t dark:border-gray-600">
           <h3 class="text-xl font-semibold text-gray-900 dark:text-white">
-            Static modal
+            <!-- {{ country.name.official }} -->
+            {{ country.name.official }}
           </h3>
           <button type="button" @click="closePopup"
             class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white"
