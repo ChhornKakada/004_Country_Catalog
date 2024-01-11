@@ -4,6 +4,7 @@ import TheWelcome from './components/TheWelcome.vue'
 import CountryCard from './components/CountryCard.vue'
 import { FwbCard } from 'flowbite-vue'
 import { FwbPagination } from 'flowbite-vue'
+import fuzzysort from 'fuzzysort'
 import {
   FwbA,
   FwbTable,
@@ -13,48 +14,70 @@ import {
   FwbTableHeadCell,
   FwbTableRow,
 } from 'flowbite-vue'
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import { FwbButton, FwbInput } from 'flowbite-vue'
+import { FwbSelect } from 'flowbite-vue'
 
-const query = ref('')
-const currentPage = ref(1)
-
-
+const currentPage = ref(1);
+const itemsPerPage = 25;
 const countries = ref([]);
-// const counties = ref([])
+const splitCountries = ref([]);
+const availableItem = ref(0)
+
+
+
+const selected = ref('')
+const sortBy = ["acs", "desc", "normal"]
 
 onMounted(async () => {
   try {
-    const response = await fetch(' https://restcountries.com/v3.1/all');
+    const response = await fetch('https://restcountries.com/v3.1/all');
     const result = await response.json();
     countries.value = result;
-    // console.log("asdf" + data.value);
+    splitCountries.value = splitCountriesIntoSubarrays(countries.value);
+    availableItem.value = countries.value.length
+    console.log(countries);
   } catch (error) {
     console.error('Error fetching data:', error);
   }
 });
+
+const splitCountriesIntoSubarrays = (data) => {
+  const tmpArray = [...data];
+  const tmp = [];
+
+  while (tmpArray.length > 0) {
+    tmp.push(tmpArray.splice(0, itemsPerPage));
+  }
+  return tmp
+};
+
+const searchTerm = ref('');
+const searchResults = ref([]);
+
+const performSearch = () => {
+  const tmp = countries.value.filter(item => {
+    if (item.name.official.toLowerCase().includes(searchTerm.value.toLowerCase())) {
+      return item
+    }
+  })
+  availableItem.value = tmp.length
+  currentPage.value = 1
+  splitCountries.value = splitCountriesIntoSubarrays(tmp)
+};
+
 </script>
 
 <template>
-  <!-- <header>
-    <img alt="Vue logo" class="logo" src="./assets/logo.svg" width="125" height="125" />
-
-    <div class="wrapper">
-      <HelloWorld msg="You did it!" />
-    </div>
-  </header>
-
-  <main>
-    <TheWelcome />
-  </main> -->
-
   <div class="">
     <h1 class="text-center text-[2rem] font-bold tracking-wider pt-10">Country all round the world!</h1>
-    <div class="w-full flex justify-center">
-      <div class="w-[90%] flex justify-end">
+    <div class="w-full flex justify-center pt-10">
+      <div class="w-[90%] flex justify-end gap-4">
+        <fwb-select v-model="selected" :options="sortBy" label="" size="lg" />
         <div class="w-2/5">
-          <div class="py-10">
-            <fwb-input v-model="query" label="" placeholder="Search your country" size="lg">
+          <div class="">
+            <fwb-input v-model="searchTerm" @input="performSearch" label="" class="text-[1.2rem]"
+              placeholder="Search your country" size="lg">
               <template #prefix>
                 <svg aria-hidden="true" class="w-5 h-5 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor"
                   viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -62,15 +85,18 @@ onMounted(async () => {
                     stroke-width="2" />
                 </svg>
               </template>
-              <template #suffix>
-                <fwb-button>Search</fwb-button>
-              </template>
             </fwb-input>
           </div>
         </div>
-
       </div>
     </div>
+
+    <div class="flex justify-center w-full py-6">
+      <div class="w-[90%] flex justify-end">
+        <h1 class="text-[1.2rem] tracking-wide font-medium">{{ splitCountries[currentPage].length * currentPage }} / {{ countries.length }} Countries</h1>
+      </div>
+    </div>
+
 
     <div class="flex justify-center tracking-wide">
       <fwb-table class="w-[90%]">
@@ -85,8 +111,8 @@ onMounted(async () => {
           <fwb-table-head-cell>Code</fwb-table-head-cell>
         </fwb-table-head>
 
-        <fwb-table-body class="text-[1rem]">
-          <fwb-table-row v-for="country, index in countries" :key="index">
+        <fwb-table-body class="text-[1rem] h-[60vh] overflow-y">
+          <fwb-table-row v-for="country, index in splitCountries[currentPage - 1]" :key="index">
             <fwb-table-cell>{{ index + 1 }}</fwb-table-cell>
             <fwb-table-cell class="w-[15%]">
               <img :src="country.flags.png" alt="" class="border rounded-lg">
@@ -128,15 +154,13 @@ onMounted(async () => {
 
             </fwb-table-cell>
           </fwb-table-row>
-
-
         </fwb-table-body>
       </fwb-table>
     </div>
 
-
     <center>
-      <fwb-pagination v-model="currentPage" :total-items="100" class="py-10"></fwb-pagination>
+      <fwb-pagination v-model="currentPage" :total-items="availableItem" :perPage="itemsPerPage"
+        class="py-10"></fwb-pagination>
     </center>
 
   </div>
