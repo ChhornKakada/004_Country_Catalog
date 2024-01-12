@@ -9,6 +9,7 @@ import {
 
 } from 'flowbite-vue'
 import { onMounted, ref } from 'vue'
+import Popup from './components/Popup.vue';
 
 
 
@@ -17,7 +18,7 @@ const itemsPerPage = 25;
 const countries = ref([]);
 const splitCountries = ref([]);
 const availableItem = ref(0)
-const country = ref({ name: { official: 'default' } })
+const country = ref('')
 
 const sortOption = ref('def');
 
@@ -42,9 +43,9 @@ onMounted(async () => {
     const response = await fetch('https://restcountries.com/v3.1/all');
     const result = await response.json();
     countries.value = result;
+
     splitCountries.value = splitCountriesIntoSubarrays(countries.value);
     availableItem.value = countries.value.length
-    console.log(splitCountries.value[0].length + 'asdf' + availableItem.value);
   } catch (error) {
     console.error('Error fetching data:', error);
   }
@@ -170,11 +171,11 @@ const sortCountries = () => {
         <fwb-table-body class="text-[1rem] max-h-[60vh] overflow-auto">
           <fwb-table-row v-for="country, index in splitCountries[currentPage - 1]" :key="index">
             <fwb-table-cell class="">{{ (itemsPerPage * (currentPage - 1)) + index + 1 }}</fwb-table-cell>
-            <fwb-table-cell class="w-[15%]">
-              <img :src="country.flags.png" alt="" class="border rounded-lg">
+            <fwb-table-cell class="min-w-[220px]">
+              <img :src="country.flags.png" alt="" class="border w-full rounded-lg">
             </fwb-table-cell>
             <fwb-table-cell>
-              <button @click="showPopup(country.name.official)" class="font-bold">
+              <button @click="showPopup(country.name.official)" class="font-bold text-left">
                 {{ country.name.official }}
               </button>
             </fwb-table-cell>
@@ -223,61 +224,13 @@ const sortCountries = () => {
       <fwb-pagination v-model="currentPage" :total-items="availableItem" :perPage="itemsPerPage"
         class="py-10"></fwb-pagination>
     </center>
+    <!-- <iframe src="https://www.google.com/maps/embed?pb=nztQtFSrUXZymJaW8" width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe> -->
     <!-- end pagination -->
 
   </div>
 
   <!-- modal 2 -->
-  <div v-show="isShowPopup" class="fixed top-0 right-0 left-0 bottom-0 bg-black opacity-80 z-40"></div>
-  <div id="static-modal" data-modal-backdrop="static" tabindex="-1" aria-hidden="true"
-    :class="{ 'flex': isShowPopup, 'hidden': !isShowPopup }"
-    class=" overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full">
-    <div class="relative p-4 flex justify-center items-center w-full max-w-[60%] max-h-full h-[100vh] border-2">
-      <!-- Modal content -->
-      <div class="relative h-[60vh] border-2 border-red-500 bg-white rounded-lg shadow dark:bg-gray-700">
-        <!-- Modal header -->
-        <div class="flex items-center justify-between p-4 md:p-5 border-b rounded-t dark:border-gray-600">
-          <h3 class="text-xl font-semibold text-gray-900 dark:text-white">
-            <!-- {{ country.name.official }} -->
-            {{ country.name.official }}
-          </h3>
-          <button type="button" @click="closePopup"
-            class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white"
-            data-modal-hide="static-modal">
-            <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
-              <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6" />
-            </svg>
-            <span class="sr-only">Close modal</span>
-          </button>
-        </div>
-        <!-- Modal body -->
-        <div class="p-4 md:p-5 space-y-4">
-          <p class="text-base leading-relaxed text-gray-500 dark:text-gray-400">
-            With less than a month to go before the European Union enacts new consumer privacy laws for its citizens,
-            companies around the world are updating their terms of service agreements to comply.
-          </p>
-          <p class="text-base leading-relaxed text-gray-500 dark:text-gray-400">
-            The European Union’s General Data Protection Regulation (G.D.P.R.) goes into effect on May 25 and is meant to
-            ensure a common set of data rights in the European Union. It requires organizations to notify users as soon as
-            possible of high-risk data breaches that could personally affect them.
-          </p>
-        </div>
-        <!-- Modal footer -->
-        <div class="flex items-center p-4 md:p-5 border-t border-gray-200 rounded-b dark:border-gray-600">
-          <button data-modal-hide="static-modal" type="button"
-            class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
-            @click="closePopup">
-            accept
-          </button>
-          <button data-modal-hide="static-modal" type="button"
-            class="ms-3 text-gray-500 bg-white hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-blue-300 rounded-lg border border-gray-200 text-sm font-medium px-5 py-2.5 hover:text-gray-900 focus:z-10 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-500 dark:hover:text-white dark:hover:bg-gray-600 dark:focus:ring-gray-600">Decline
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-
+  <Popup :country="country" :isShow="isShowPopup" @close="closePopup"></Popup>
   <!-- end modal 2 -->
 </template>
 
