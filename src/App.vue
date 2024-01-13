@@ -1,4 +1,4 @@
-<script  setup>
+<script setup>
 import {
   FwbButton, FwbInput, FwbModal, FwbPagination, FwbTable,
   FwbTableBody,
@@ -6,12 +6,11 @@ import {
   FwbTableHead,
   FwbTableHeadCell,
   FwbTableRow,
-
 } from 'flowbite-vue'
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import Popup from './components/Popup.vue';
-
-
+import SortSelect from './components/SortSelect.vue';
+import Search from './components/Search.vue';
 
 const currentPage = ref(1);
 const itemsPerPage = 25;
@@ -19,22 +18,33 @@ const countries = ref([]);
 const splitCountries = ref([]);
 const availableItem = ref(0)
 const country = ref('')
+const totalShow = ref(0)
 
+watch(currentPage, (newPage, oldPage) => {
+  if (newPage > oldPage) {
+    totalShow.value = (itemsPerPage * (newPage - 1)) + splitCountries.value[newPage - 1].length
+  } else {
+    totalShow.value = newPage * itemsPerPage
+  }
+});
+
+// sorting
 const sortOption = ref('def');
+const dropdownOptions = ref([
+  { value: "def", label: "Default" },
+  { value: "acs", label: "ACS" },
+  { value: "desc", label: "DESC" },
+])
 
+// for showing popup
 const isShowPopup = ref(false)
 
 function closePopup() {
   isShowPopup.value = false
 }
 
-function showPopup(countryName) {
-  for (var item of countries.value) {
-    if (item.name.official == countryName) {
-      country.value = item
-      break
-    }
-  }
+function showPopup(inputCountry) {
+  country.value = inputCountry
   isShowPopup.value = true
 }
 
@@ -46,6 +56,7 @@ onMounted(async () => {
 
     splitCountries.value = splitCountriesIntoSubarrays(countries.value);
     availableItem.value = countries.value.length
+    totalShow.value = splitCountries.value[currentPage.value - 1].length * (currentPage.value)
   } catch (error) {
     console.error('Error fetching data:', error);
   }
@@ -61,24 +72,30 @@ const splitCountriesIntoSubarrays = (data) => {
   return tmp
 };
 
+
+// for searching
 const searchTerm = ref('');
 
-const performSearch = () => {
+const performSearch = (input) => {
+  console.log(input);
   const tmp = countries.value.filter(item => {
-    if (item.name.official.toLowerCase().includes(searchTerm.value.toLowerCase())) {
+    if (item.name.official.toLowerCase().includes(input.toLowerCase())) {
       return item
     }
   })
   availableItem.value = tmp.length
   currentPage.value = 1
   splitCountries.value = splitCountriesIntoSubarrays(tmp)
+  totalShow.value = splitCountries.value[currentPage.value - 1].length * (currentPage.value)
 };
 
-const sortCountries = () => {
+
+// sort function
+const sortCountries = (option) => {
   const tmp = [...countries.value];
-  if (sortOption.value == 'desc') {
+  if (option == 'desc') {
     tmp.sort((a, b) => (a.name.official > b.name.official ? -1 : 1));
-  } else if (sortOption.value == "acs") {
+  } else if (option == "acs") {
     tmp.sort((a, b) => (a.name.official > b.name.official ? 1 : -1));
   }
 
@@ -86,60 +103,25 @@ const sortCountries = () => {
   availableItem.value = tmp.length
   currentPage.value = 1
   splitCountries.value = splitCountriesIntoSubarrays(tmp)
+  totalShow.value = splitCountries.value[currentPage.value - 1].length * (currentPage.value)
 };
 
 </script>
 
 <template>
   <div class="">
-    <h1 class="text-center text-[2rem] font-bold tracking-wider pt-10">Country all round the world!</h1>
-    <!-- <p>{{ isShowModal }}</p> -->
-
+    <h1 class="text-center text-[2rem] text-gary-800 font-bold tracking-wider pt-10">Let's Go to See Countries</h1>
     <div class="w-full flex justify-center pt-10">
       <div class="w-[90%] flex justify-end gap-4">
 
         <!-- sort -->
-        <div class="flex gap-2 items-center text-xl">
-          <div class="flex">
-            <button id="states-button" data-dropdown-toggle="dropdown-states"
-              class="flex-shrink-0 z-10 inline-flex items-center py-2.5 px-4 text-sm font-medium text-center text-gray-500 bg-gray-100 border border-gray-300 rounded-s-lg hover:bg-gray-200 focus:ring-4 focus:outline-none focus:ring-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 dark:focus:ring-gray-700 dark:text-white dark:border-gray-600"
-              type="button">
-
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
-                stroke="currentColor" class="w-6 h-6">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12H12m-8.25 5.25h16.5" />
-              </svg>
-              <span class="pl-2">Sort by</span>
-            </button>
-
-            <select id="states" v-model="sortOption" @change="sortCountries"
-              class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-e-lg border-s-gray-100 dark:border-s-gray-700 border-s-2 focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
-              <option selected value="def">Default</option>
-              <option value="desc">DESC</option>
-              <option value="acs">ASC</option>
-            </select>
-          </div>
-        </div>
+        <SortSelect :option_selected="sortOption" :options="dropdownOptions" @change_option="sortCountries">
+        </SortSelect>
         <!-- end sort -->
 
-
         <!-- search -->
-        <div class="w-1/5">
-          <div class="flex items-center">
-            <label for="simple-search" class="sr-only">Search</label>
-            <div class="relative w-full">
-              <div class="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6">
-                  <path fill-rule="evenodd"
-                    d="M10.5 3.75a6.75 6.75 0 1 0 0 13.5 6.75 6.75 0 0 0 0-13.5ZM2.25 10.5a8.25 8.25 0 1 1 14.59 5.28l4.69 4.69a.75.75 0 1 1-1.06 1.06l-4.69-4.69A8.25 8.25 0 0 1 2.25 10.5Z"
-                    clip-rule="evenodd" />
-                </svg>
-              </div>
-              <input type="text" id="simple-search" v-model="searchTerm" @input="performSearch" label=""
-                class=" bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full ps-10 p-2.5 py-[12px]  dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                placeholder="Search your country..." required>
-            </div>
-          </div>
+        <div class="grow sm:grow-0 sm:w-[200px] xl:w-1/5">
+          <Search :search-term="searchTerm" @searching="performSearch"></Search>
         </div>
         <!-- end search -->
 
@@ -148,19 +130,19 @@ const sortCountries = () => {
 
     <!-- count -->
     <div class="flex justify-center w-full py-6">
-      <div class="w-[90%] flex justify-end">
-        <p class="text-[1.2rem] tracking-wide font-medium"></p>
+      <div class="w-[90%] flex justify-end text-gray-700">
+        <p class="text-[1.2rem] tracking-wide font-medium">{{ totalShow }} / {{ availableItem }} Countries</p>
       </div>
     </div>
     <!-- end count -->
 
     <!-- table -->
-    <div class="flex justify-center tracking-wide overflow-auto h-[60vh]">
+    <div class="flex justify-center tracking-wide overflow h-[60vh]">
       <fwb-table class="w-[90%]" striped>
-        <fwb-table-head class="text-[1.2rem] w-full">
+        <fwb-table-head class="text-[1.2rem]">
           <fwb-table-head-cell class="">No</fwb-table-head-cell>
-          <fwb-table-head-cell class="text-center ">Flag</fwb-table-head-cell>
-          <fwb-table-head-cell class="">official Name</fwb-table-head-cell>
+          <fwb-table-head-cell class="">Flag</fwb-table-head-cell>
+          <fwb-table-head-cell class="">Offical Name</fwb-table-head-cell>
           <fwb-table-head-cell class="">cca2</fwb-table-head-cell>
           <fwb-table-head-cell class="">cca3</fwb-table-head-cell>
           <fwb-table-head-cell class="">Native Name</fwb-table-head-cell>
@@ -168,19 +150,19 @@ const sortCountries = () => {
           <fwb-table-head-cell class="">Code</fwb-table-head-cell>
         </fwb-table-head>
 
-        <fwb-table-body class="text-[1rem] max-h-[60vh] overflow-auto">
+        <fwb-table-body class="text-[1rem] max-h-[60vh]">
           <fwb-table-row v-for="country, index in splitCountries[currentPage - 1]" :key="index">
             <fwb-table-cell class="">{{ (itemsPerPage * (currentPage - 1)) + index + 1 }}</fwb-table-cell>
-            <fwb-table-cell class="min-w-[220px]">
+            <fwb-table-cell class="min-w-[230px] max-w-[230px] w-[230px]">
               <img :src="country.flags.png" alt="" class="border w-full rounded-lg">
             </fwb-table-cell>
             <fwb-table-cell>
-              <button @click="showPopup(country.name.official)" class="font-bold text-left">
+              <button @click="showPopup(country)" class="font-bold text-left">
                 {{ country.name.official }}
               </button>
             </fwb-table-cell>
             <fwb-table-cell>{{ country.cca2 }}</fwb-table-cell>
-            <fwb-table-cell>{{ country.ccn3 }}</fwb-table-cell>
+            <fwb-table-cell>{{ country.cca3 }}</fwb-table-cell>
             <fwb-table-cell>
               <div class="text-start overflow-auto h-[100px] flex items-center">
                 <div>
@@ -189,26 +171,23 @@ const sortCountries = () => {
                   </p>
                 </div>
               </div>
-
             </fwb-table-cell>
             <fwb-table-cell>
-              <p v-for="altName in country.altSpellings" :key="altName">
-                {{ altName }}
-              </p>
+              <div class="text-start overflow-auto h-[110px] flex items-center">
+                <div>
+                  <p v-for="altName in country.altSpellings" :key="altName">
+                    . {{ altName }}
+                  </p>
+                </div>
+
+              </div>
             </fwb-table-cell>
 
             <fwb-table-cell class="w-[10%]">
               <div class="text-start overflow-auto h-[100px] flex items-center">
                 <div>
-                  <p v-for="(name, langCode, index) in country.idd" :key="index">
-                    {{ langCode.toUpperCase() }}:
-                    <span v-if="index == 1">
-                      <span v-for="v, index in name" :key="index">
-                        <span v-if="index > 0">, {{ v }}</span>
-                        <span v-else>{{ v }} </span>
-                      </span>
-                    </span>
-                    <span v-else>{{ name }}</span>
+                  <p v-for="(suf, index) in country.idd.suffixes" :key="index">
+                    {{ country.idd.root }}{{ suf }}
                   </p>
                 </div>
               </div>
@@ -224,7 +203,6 @@ const sortCountries = () => {
       <fwb-pagination v-model="currentPage" :total-items="availableItem" :perPage="itemsPerPage"
         class="py-10"></fwb-pagination>
     </center>
-    <!-- <iframe src="https://www.google.com/maps/embed?pb=nztQtFSrUXZymJaW8" width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe> -->
     <!-- end pagination -->
 
   </div>
@@ -235,3 +213,4 @@ const sortCountries = () => {
 </template>
 
 <style></style>
+
