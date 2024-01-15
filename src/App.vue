@@ -19,6 +19,7 @@ const splitCountries = ref([]);
 const availableItem = ref(0)
 const country = ref('')
 const totalShow = ref(0)
+const isLoading = ref(true)
 
 watch(currentPage, (newPage, oldPage) => {
   if (newPage > oldPage) {
@@ -57,6 +58,7 @@ onMounted(async () => {
     splitCountries.value = splitCountriesIntoSubarrays(countries.value);
     availableItem.value = countries.value.length
     totalShow.value = splitCountries.value[currentPage.value - 1].length * (currentPage.value)
+    isLoading.value = false
   } catch (error) {
     console.error('Error fetching data:', error);
   }
@@ -86,7 +88,13 @@ const performSearch = (input) => {
   availableItem.value = tmp.length
   currentPage.value = 1
   splitCountries.value = splitCountriesIntoSubarrays(tmp)
-  totalShow.value = splitCountries.value[currentPage.value - 1].length * (currentPage.value)
+  if (tmp.length == 0) {
+    availableItem.value = 0
+    totalShow.value = 0
+  } else {
+    totalShow.value = splitCountries.value[currentPage.value - 1].length * (currentPage.value)
+  }
+
 };
 
 
@@ -136,8 +144,16 @@ const sortCountries = (option) => {
     </div>
     <!-- end count -->
 
+    <!-- loading -->
+    <div v-if="isLoading" class="flex justify-center items-center pt-[100px]">
+      <div>
+        <span class="loader"></span>
+      </div>
+    </div>
+    <!-- end loading -->
+
     <!-- table -->
-    <div class="flex justify-center tracking-wide overflow h-[60vh]">
+    <div v-else class="flex justify-center tracking-wide overflow h-[60vh]">
       <fwb-table class="w-[90%]" striped>
         <fwb-table-head class="text-[1.2rem]">
           <fwb-table-head-cell class="">No</fwb-table-head-cell>
@@ -203,6 +219,7 @@ const sortCountries = (option) => {
       <fwb-pagination v-model="currentPage" :total-items="availableItem" :perPage="itemsPerPage"
         class="py-10"></fwb-pagination>
     </center>
+    
     <!-- end pagination -->
 
   </div>
@@ -212,5 +229,29 @@ const sortCountries = (option) => {
   <!-- end modal 2 -->
 </template>
 
-<style></style>
+<style>
+.loader {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: inline-block;
+  position: relative;
+  border: 10px solid;
+  border-color: rgba(0, 0, 0, 0.15) rgba(0, 0, 0, 0.25) rgba(0, 0, 0, 0.35) rgba(0, 0, 0, 0.5);
+  box-sizing: border-box;
+  animation: rotation 1s linear infinite;
+}
+
+@keyframes rotation {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+</style>
+
+
 

@@ -383,7 +383,8 @@ export default {
             </div>
           </div>
           <!-- Modal footer -->
-
+          <iframe src="https://goo.gl/maps/nztQtFSrUXZymJaW8" width="500" height="500" frameborder="0"></iframe>
+          <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3988071.9708787063!2d103.93691332812504!3d12.542535381514385!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x310787bfd4dc3743%3A0xe4b7bfe089f41253!2sCambodia!5e0!3m2!1sen!2skh!4v1705307019160!5m2!1sen!2skh" width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
         </div>
       </div>
     </div>
